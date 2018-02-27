@@ -384,11 +384,11 @@ class ProkkaAnnotation:
 
         try:
             check_output(prokka_cmd_list, cwd=self.scratch)
-            return output_dir
         except CalledProcessError as e:
-            sys.exit(e)
+            pprint(e)
+        return output_dir
 
-    def get_new_annotations(self,gff_filepath):
+    def get_new_annotation(self,gff_filepath):
         """
 
         :param gff_filepath: A dictionary of ids with products and ec numbers
@@ -438,10 +438,15 @@ class ProkkaAnnotation:
         print('Finished printing to' + fasta_for_prokka_filepath)
         return fasta_for_prokka_filepath
 
+    def annotate_genome_with_new_annotations(self, **annotation_args):
+        """
 
-
-
-    def annotate_genome_with_new_annotations(self,genome_data,new_annotations):
+        :param annotation_args:
+        :return:
+        """
+        genome_data = annotation_args['genome_data']
+        new_annotations = annotation_args['new_annotations']
+        output_genome_name = annotation_args['output_genome_name']
         stats = defaultdict(int)
 
         current_function_count = 0
@@ -522,6 +527,8 @@ class ProkkaAnnotation:
         #genome_ref = "12972/5/1"
         genome_data = self.dfu.get_objects({'object_refs': [genome_ref]})['data'][0]
 
+        output_name = self._get_input_value(params, 'output_genome_name')
+
 
         fasta_for_prokka_filepath = self.write_genome_to_fasta(genome_data)
 
@@ -532,11 +539,13 @@ class ProkkaAnnotation:
 
         #prokka_results_gff_filepath = "/kb/module/data/mygenome.gff"
 
-        new_annotations = self.get_new_annotations(prokka_results.gff_filepath)
+        new_annotation = self.get_new_annotation(prokka_results.gff_filepath)
 
         #new_annotations = self.get_new_annotations(prokka_results_gff_filepath)
 
-        annotated_genome = self.annotate_genome_with_new_annotations(genome_data,new_annotations)
+        annotated_genome = self.annotate_genome_with_new_annotations(genome_data=genome_data,
+                                                                     new_annotation=new_annotation,
+                                                                     output_genome_name=output_name)
 
         return self.report_annotated_genome(annotated_genome)
 
