@@ -6,10 +6,10 @@
     "contact": "help@kbase.us",
     "categories": ["active", "annotation"],
     "widgets": {
-        "input": null,
-        "output": "kbaseGenomeView"
+        "input": "kbaseNarrativeMethodInput",
+        "output": "no-display"
     },
-    "parameters": [ 
+    "parameters": [
         {
             "id": "object_ref",
             "optional": false,
@@ -21,13 +21,13 @@
                 "valid_ws_types": ["KBaseGenomeAnnotations.Assembly", "KBaseGenomes.Genome"]
             }
         },
-        {  
+        {
             "id": "scientific_name",
             "optional": true,
             "advanced": false,
             "allow_multiple": false,
             "default_values": [ "" ],
-            "field_type" : "text" 
+            "field_type" : "text"
         },
         {
             "id": "output_genome_name",
@@ -69,7 +69,7 @@
               ]
             }
         },
-        {  
+        {
             "id": "genus",
             "optional": true,
             "advanced": true,
@@ -97,7 +97,7 @@
               ]
             }
         },
-        {  
+        {
             "id": "gcode",
             "optional": true,
             "advanced": true,
@@ -144,7 +144,7 @@
                 "unchecked_value": 0
             }
         },
-        {  
+        {
             "id": "mincontiglen",
             "optional": true,
             "advanced": true,
@@ -155,13 +155,13 @@
                 "validate_as": "int"
             }
         },
-        {  
+        {
             "id": "evalue",
             "optional": true,
             "advanced": true,
             "allow_multiple": false,
             "default_values": [ "" ],
-            "field_type" : "text" 
+            "field_type" : "text"
         },
         {
             "id": "rfam",
@@ -269,27 +269,23 @@
                 }
             ],
             "output_mapping": [
-                {
-                    "service_method_output_path": [0,"report_name"],
-                    "target_property": "report_name"
-                },
-                {
-                    "service_method_output_path": [0,"report_ref"],
-                    "target_property": "report_ref"
-                },
-                {
-                    "constant_value": "16",
-                    "target_property": "report_window_line_height"
-                },
-                {
-                    "input_parameter": "output_genome_name",
-                    "target_property": "id"
-                },
-                {
-                    "narrative_system_variable": "workspace",
-                    "target_property": "wsName"
-                }
-            ]
+              {
+                "narrative_system_variable": "workspace",
+                "target_property": "wsName"
+              },
+              {
+                "service_method_output_path": [0,"report_name"],
+                "target_property": "report_name"
+              },
+              {
+                "service_method_output_path": [0,"report_ref"],
+                "target_property": "report_ref"
+              },
+              {
+                "constant_value": "16",
+                "target_property": "report_window_line_height"
+              }
+          ]
         }
     },
     "job_id_output_field": "docker"
