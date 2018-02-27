@@ -506,6 +506,7 @@ class ProkkaAnnotation:
         :return:
         """
         output_file_shock_id = self.dfu.file_to_shock({"file_path": filepath})["shock_id"]
+        print("Uploaded filepath" + filepath + "to shock and got id" + output_file_shock_id)
         return {"shock_id": output_file_shock_id,
                                "name": os.path.basename(filepath),
                                "label": os.path.basename(filepath),
@@ -519,15 +520,15 @@ class ProkkaAnnotation:
         """
         genome_ref = annotated_genome.genome_ref
 
-        output_files = list()
+        file_links = list()
         for filepath in [annotated_genome.function_report_filepath,
                          annotated_genome.ontology_report_filepath]:
-            output_files.append(self.upload_file(filepath))
+            file_links.append(self.upload_file(filepath))
 
         report_info = self.kbr.create_extended_report(
             {'message': "Custom Report Message " + annotated_genome.function_report_filepath + annotated_genome.ontology_report_filepath,
              'objects_created': [{'ref': genome_ref, 'description': 'Annotated genome'}],
-             'output_files': output_files,
+             'file_links': output_files,
              'report_object_name': 'kb_prokka_report_' + str(uuid.uuid4()),
              'workspace_name': self.output_workspace
              })
