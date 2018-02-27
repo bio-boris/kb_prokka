@@ -278,7 +278,7 @@
                     "target_property": "report_ref"
                 },
                 {
-                    "constant_value": "5",
+                    "constant_value": "16",
                     "target_property": "report_window_line_height"
                 },
                 {
@@ -287,7 +287,7 @@
                 },
                 {
                     "narrative_system_variable": "workspace",
-                    "target_property": "ws"
+                    "target_property": "wsName"
                 }
             ]
         }
