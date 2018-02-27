@@ -9,6 +9,8 @@ from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 from BCBio import GFF
 from pprint import pformat,pprint
+from subprocess import check_output, CalledProcessError
+import sys
 
 from AssemblyUtil.AssemblyUtilClient import AssemblyUtil
 from GenomeFileUtil.GenomeFileUtilClient import GenomeFileUtil
@@ -336,7 +338,7 @@ class ProkkaAnnotation:
 
         # --kingdom [X]     Annotation mode: Archaea|Bacteria|Mitochondria|Viruses (default 'Bacteria')
 
-        prokka_cmd_list = ['perl', '/kb/prokka/bin/prokka', '--outdir', output_dir, '--prefix',
+        prokka_cmd_list = ['perl', '/kb/prokka/bin/prokkaZXC', '--outdir', output_dir, '--prefix',
                            'mygenome', '--kingdom', kingdom]
 
 
@@ -346,7 +348,7 @@ class ProkkaAnnotation:
         if 'genus' in params and params['genus']:
             prokka_cmd_list.extend(['--genus', str(params['genus']), '--usegenus'])
         # --gcode [N]       Genetic code / Translation table (set if --kingdom is set) (default '0')
-        if 'gcode' in params and params['code']:
+        if 'gcode' in params and params['gcode']:
             prokka_cmd_list.extend(['--gcode', str(params['gcode'])])
         else:
             prokka_cmd_list.extend(['--gcode', '0'])
@@ -379,9 +381,12 @@ class ProkkaAnnotation:
             prokka_cmd_list.append('--notrna')
         prokka_cmd_list.append(subject_fasta_filepath)
         print('Prokka command line: ' + str(prokka_cmd_list))
-        subprocess.Popen(prokka_cmd_list, cwd=self.scratch).wait()
 
-        return output_dir
+        try:
+            check_output(prokka_cmd_list, cwd=self.scratch)
+            return output_dir
+        except CalledProcessError as e:
+            sys.exit(e)
 
     def get_new_annotations(self,gff_filepath):
         """
