@@ -528,7 +528,7 @@ class ProkkaAnnotation:
         report_info = self.kbr.create_extended_report(
             {'message': "Custom Report Message " + annotated_genome.function_report_filepath + annotated_genome.ontology_report_filepath,
              'objects_created': [{'ref': genome_ref, 'description': 'Annotated genome'}],
-             'file_links': output_files,
+             'file_links': file_links,
              'report_object_name': 'kb_prokka_report_' + str(uuid.uuid4()),
              'workspace_name': self.output_workspace
              })
