@@ -102,7 +102,7 @@ class kb_prokkaTest(unittest.TestCase):
 
     def testReAnnotateGenome(self):
         self.getImpl().annotate(self.getContext(),
-                                {'object_ref': '12972/5/1',
+                                {'object_ref': '12972/4/1',
                                  'output_workspace': self.getWsName(),
                                  'output_genome_name': 'genome_name',
                                  'evalue': None,

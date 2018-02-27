@@ -338,12 +338,18 @@ class ProkkaAnnotation:
 
         prokka_cmd_list = ['perl', '/kb/prokka/bin/prokka', '--outdir', output_dir, '--prefix',
                            'mygenome', '--kingdom', kingdom]
+
+
+        pprint(params)
+
         # --genus [X]       Genus name (triggers to use --usegenus)
         if 'genus' in params and params['genus']:
             prokka_cmd_list.extend(['--genus', str(params['genus']), '--usegenus'])
         # --gcode [N]       Genetic code / Translation table (set if --kingdom is set) (default '0')
-        gcode = params.get('gcode', 0)
-        prokka_cmd_list.extend(['--gcode', str(gcode)])
+        if 'gcode' in params and params['code']:
+            prokka_cmd_list.extend(['--gcode', str(params['gcode'])])
+        else:
+            prokka_cmd_list.extend(['--gcode', '0'])
         # --gram [X]        Gram: -/neg +/pos (default '')
         if 'gram' in params and params['gram']:
             raise ValueError('gram parameter is not supported in current Prokka installation')
