@@ -338,7 +338,7 @@ class ProkkaAnnotation:
 
         # --kingdom [X]     Annotation mode: Archaea|Bacteria|Mitochondria|Viruses (default 'Bacteria')
 
-        prokka_cmd_list = ['perl', '/kb/prokka/bin/prokkaZXC', '--outdir', output_dir, '--prefix',
+        prokka_cmd_list = ['perl', '/kb/prokka/bin/prokka', '--outdir', output_dir, '--prefix',
                            'mygenome', '--kingdom', kingdom]
 
 
