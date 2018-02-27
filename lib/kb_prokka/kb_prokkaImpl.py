@@ -388,7 +388,7 @@ class ProkkaAnnotation:
             pprint(e)
         return output_dir
 
-    def get_new_annotation(self,gff_filepath):
+    def get_new_annotations(self,gff_filepath):
         """
 
         :param gff_filepath: A dictionary of ids with products and ec numbers
@@ -539,12 +539,12 @@ class ProkkaAnnotation:
 
         #prokka_results_gff_filepath = "/kb/module/data/mygenome.gff"
 
-        new_annotation = self.get_new_annotation(prokka_results.gff_filepath)
+        new_annotations = self.get_new_annotations(prokka_results.gff_filepath)
 
         #new_annotations = self.get_new_annotations(prokka_results_gff_filepath)
 
         annotated_genome = self.annotate_genome_with_new_annotations(genome_data=genome_data,
-                                                                     new_annotation=new_annotation,
+                                                                     new_annotations=new_annotations,
                                                                      output_genome_name=output_name)
 
         return self.report_annotated_genome(annotated_genome)
