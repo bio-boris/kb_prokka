@@ -21,7 +21,7 @@ from collections import namedtuple,defaultdict
 #END_HEADER
 
 
-class kb_prokka:
+class ProkkaAnnotation:
     """
     Module Name:
     ProkkaAnnotation
@@ -648,7 +648,6 @@ class kb_prokka:
         object_ref = self._get_input_value(params, "object_ref")
         self.ws_client = workspaceService(self.ws_url, token=ctx["token"])
         self.ctx = ctx
-        pprint((os.environ["SDK_CALLBACK_URL"], ctx["token"]))
         self.au = AssemblyUtil(os.environ["SDK_CALLBACK_URL"], token=ctx["token"])
         self.kbr = KBaseReport(os.environ["SDK_CALLBACK_URL"], token=ctx["token"])
         self.dfu = DataFileUtil(os.environ["SDK_CALLBACK_URL"])
