@@ -546,9 +546,14 @@ class kb_prokka:
                                                        cds_to_dna=prokka_results.cds_to_dna,
                                                        cds_to_prot=prokka_results.cds_to_dna,
                                                        new_ids_to_old=renamed_assembly.new_ids_to_old)
+
+        scientific_name = ''
+        if 'scientific_name' in params and params['scientific_name']:
+            scientific_name = params['scientific_name']
+
         genome = {"id": "Unknown",
                   "features": annotated_assembly.features,
-                  "scientific_name": params.get("scientific_name", "Unknown"),
+                  "scientific_name": scientific_name,
                   "domain": str(params.get("kingdom", "Bacteria")),
                   "genetic_code": params.get("gcode", 0),
                   "assembly_ref": assembly_ref,
