@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #BEGIN_HEADER
 import os
-import subprocess
+
 import uuid
 import hashlib
 import json
@@ -10,25 +10,25 @@ from Bio.SeqRecord import SeqRecord
 from BCBio import GFF
 from pprint import pformat,pprint
 from subprocess import check_output, CalledProcessError
-import sys
+from collections import namedtuple
 
 from AssemblyUtil.AssemblyUtilClient import AssemblyUtil
 from GenomeFileUtil.GenomeFileUtilClient import GenomeFileUtil
 from KBaseReport.KBaseReportClient import KBaseReport
 from biokbase.workspace.client import Workspace as workspaceService  # @UnresolvedImport @IgnorePep8
 from DataFileUtil.DataFileUtilClient import DataFileUtil
-from collections import namedtuple,defaultdict
+
 #END_HEADER
 
 
 class kb_prokka:
-    """
+    '''
     Module Name:
     ProkkaAnnotation
 
     Module Description:
     A KBase module: ProkkaAnnotation
-    """
+    '''
 
     ######## WARNING FOR GEVENT USERS ####### noqa
     # Since asynchronous IO can lead to methods - even the same method -
@@ -36,9 +36,9 @@ class kb_prokka:
     # state. A method could easily clobber the state set by another while
     # the latter method is running.
     ######################################### noqa
-    VERSION = "1.0.5"
+    VERSION = "0.1.0"
     GIT_URL = "https://github.com/bio-boris/ProkkaAnnotation.git"
-    GIT_COMMIT_HASH = "8c6463159e9effb84f719f124e9d82685cb70c9f"
+    GIT_COMMIT_HASH = "8d1d5cadab1f7a7c34ad5653a745f02316669296"
 
     #BEGIN_CLASS_HEADER
 
@@ -158,8 +158,10 @@ class kb_prokka:
         """
         output_dir = "/kb/module/work/tmp/temp_" + str(uuid.uuid4())
 
-        kingdom = str(params.get("kingdom", "Bacteria"))
-        # --kingdom [X]     Annotation mode: Archaea|Bacteria|Mitochondria|Viruses (default "Bacteria")
+        # --kingdom [X]  Annotation mode: Archaea|Bacteria|Mitochondria|Viruses (default "Bacteria")
+        kingdom = "Bacteria"
+        if "kingdom" in params and params["kingdom"]:
+            kingdom = params["kingdom"]
 
         prokka_cmd_list = ["perl", "/kb/prokka/bin/prokka", "--outdir", output_dir, "--prefix",
                            "mygenome", "--kingdom", kingdom]
@@ -383,11 +385,14 @@ class kb_prokka:
                                                  "features_" + str(uuid.uuid4()) + ".fasta")
         with open(fasta_for_prokka_filepath, "w") as f:
             for item in genome_data["data"]["features"]:
-                if "id" not in item and "dna_sequence" not in item:
-                    print("COMPLAINING ABOUT THIS BAD SEQUENCE")
+                if "id" not in item or "dna_sequence" not in item:
+                    print("This feature does not have a valid dna sequence.")
                 else:
                     f.write(">" + item["id"] + "\n" + item["dna_sequence"] + "\n")
         print("Finished printing to" + fasta_for_prokka_filepath)
+        if os.stat(fasta_for_prokka_filepath).st_size==0:
+            raise Exception("Empty fasta")
+
         return fasta_for_prokka_filepath
 
     def annotate_genome_with_new_annotations(self, **annotation_args):
@@ -413,17 +418,19 @@ class kb_prokka:
         func_r.write("function_id current_function new_function\n")
         onto_r.write("function_id current_ontology new_ontology\n")
 
+        import sys
         for i, feature in enumerate(genome_data["data"]["features"]):
             fid = feature["id"]
             current_function = feature.get("function", "")
             current_ontology = feature.get("ontology_terms", None)
             new_function = ""
             new_ontology = dict()
+
             if fid in new_annotations:
                 new_function = new_annotations[fid].get("function", "")
                 new_ontology = new_annotations[fid].get("ontology_terms", None)
 
-                if new_function is not "" and new_function is not "hypothetical protein":
+                if new_function and "hypothetical protein" not in new_function:
                     genome_data["data"]["features"][i]["function"] = new_function
                     stats["new_functions"] += 1
 
@@ -435,6 +442,8 @@ class kb_prokka:
                         genome_data["data"]["features"][i]["ontology_terms"]["SSO"][key] = \
                             new_ontology[key]
                         stats["new_ontologies"] += 1
+                        print("Key Type  for " + str(key) + " = " + str(type(new_ontology[key])))
+                        print(new_ontology[key])
 
             func_r.write(json.dumps([fid, current_function, new_function]) + "\n")
             onto_r.write(json.dumps([fid, current_ontology, new_ontology]) + "\n")
@@ -547,15 +556,22 @@ class kb_prokka:
                                                        cds_to_prot=prokka_results.cds_to_dna,
                                                        new_ids_to_old=renamed_assembly.new_ids_to_old)
 
-        scientific_name = ''
+        # Force defaults for optional parameters that may be set to None
+        scientific_name = 'Unknown'
         if 'scientific_name' in params and params['scientific_name']:
             scientific_name = params['scientific_name']
+        domain = "Bacteria"
+        if 'kingdom' in params and params['kingdom']:
+            domain = params['kingdom']
+        gcode = 0
+        if 'gcode' in params and params['gcode']:
+            gcode = params['gcode']
 
         genome = {"id": "Unknown",
                   "features": annotated_assembly.features,
                   "scientific_name": scientific_name,
-                  "domain": str(params.get("kingdom", "Bacteria")),
-                  "genetic_code": params.get("gcode", 0),
+                  "domain": domain,
+                  "genetic_code": gcode,
                   "assembly_ref": assembly_ref,
                   "cdss": annotated_assembly.cdss,
                   "mrnas": annotated_assembly.mrnas,
@@ -586,23 +602,27 @@ class kb_prokka:
 
     #END_CLASS_HEADER
 
-    # config contains contents of config file in a hash or None if it couldn"t
+    # config contains contents of config file in a hash or None if it couldn't
     # be found
     def __init__(self, config):
         #BEGIN_CONSTRUCTOR
         self.scratch = config["scratch"]
         self.ws_url = config["workspace-url"]
-        self.gfu = GenomeFileUtil(os.environ["SDK_CALLBACK_URL"])
-        self.ws_client = None
+        self.callback_url = os.environ["SDK_CALLBACK_URL"]
+
+        self.ws_client = workspaceService(self.ws_url)
+        self.gfu = GenomeFileUtil(self.callback_url)
+        self.au = AssemblyUtil(self.callback_url)
+        self.kbr = KBaseReport(self.callback_url)
+        self.dfu = DataFileUtil(self.callback_url)
+
         self.sso_ref = None
-        self.au = None
         self.ctx = None
-        self.kbr = None
-        self.dfu = None
         self.ec_to_sso = {}
         self.output_workspace = None
         #END_CONSTRUCTOR
         pass
+
 
     def annotate(self, ctx, params):
         """
@@ -611,19 +631,19 @@ class kb_prokka:
            output_workspace - output workspace name, output_genome_name -
            output object name, Optional parameters (correspond to PROKKA
            command line arguments): --scientific_name Genome scientific name
-           (default "Unknown") --kingdom [X]     Annotation mode:
-           Archaea|Bacteria|Mitochondria|Viruses (default "Bacteria") --genus
+           (default 'Unknown') --kingdom [X]     Annotation mode:
+           Archaea|Bacteria|Mitochondria|Viruses (default 'Bacteria') --genus
            [X]       Genus name (triggers to use --usegenus) --gcode [N]
            Genetic code / Translation table (set if --kingdom is set)
-           (default "11") --metagenome      Improve gene predictions for
+           (default '11') --metagenome      Improve gene predictions for
            highly fragmented genomes (default OFF) --rawproduct      Do not
            clean up /product annotation (default OFF) --fast            Fast
            mode - skip CDS /product searching (default OFF) --mincontiglen
-           [N] Minimum contig size [NCBI needs 200] (default "1") --evalue
-           [n.n]    Similarity e-value cut-off (default "1e-06") --rfam
+           [N] Minimum contig size [NCBI needs 200] (default '1') --evalue
+           [n.n]    Similarity e-value cut-off (default '1e-06') --rfam
            Enable searching for ncRNAs with Infernal+Rfam (SLOW!) (default
-           OFF) --norrna          Don"t run rRNA search (default OFF)
-           --notrna          Don"t run tRNA search (default OFF)) ->
+           OFF) --norrna          Don't run rRNA search (default OFF)
+           --notrna          Don't run tRNA search (default OFF)) ->
            structure: parameter "object_ref" of type "data_obj_ref"
            (Reference to an Assembly or Genome object in the workspace @id ws
            KBaseGenomeAnnotations.Assembly @id ws KBaseGenomes.Genome),
@@ -649,19 +669,13 @@ class kb_prokka:
         # return variables are: returnVal
         #BEGIN annotate
         print("Input parameters: " + pformat(params))
+        self.ctx = ctx
         self.output_workspace = params["output_workspace"]
         object_ref = self._get_input_value(params, "object_ref")
-        self.ws_client = workspaceService(self.ws_url, token=ctx["token"])
-        self.ctx = ctx
-        pprint((os.environ["SDK_CALLBACK_URL"], ctx["token"]))
-        self.au = AssemblyUtil(os.environ["SDK_CALLBACK_URL"], token=ctx["token"])
-        self.kbr = KBaseReport(os.environ["SDK_CALLBACK_URL"], token=ctx["token"])
-        self.dfu = DataFileUtil(os.environ["SDK_CALLBACK_URL"])
-        self.download_seed_data()
-
         object_info = self.ws_client.get_object_info_new({"objects": [{"ref": object_ref}],
-                                                          "includeMetadata": 1})[0]
+                                                           "includeMetadata": 1})[0]
         object_type = object_info[2]
+        self.download_seed_data()
 
         if "KBaseGenomeAnnotations.Assembly" in object_type:
             return [self.annotate_assembly(params, object_info)]
@@ -671,6 +685,12 @@ class kb_prokka:
             raise Exception("Unsupported type" + object_type)
         #END annotate
 
+        # At some point might do deeper type checking...
+        if not isinstance(returnVal, dict):
+            raise ValueError('Method annotate return value ' +
+                             'returnVal is not type dict as required.')
+        # return the results
+        return [returnVal]
     def status(self, ctx):
         #BEGIN_STATUS
         returnVal = {"state": "OK",
