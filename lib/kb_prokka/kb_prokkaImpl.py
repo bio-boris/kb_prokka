@@ -11,6 +11,10 @@ from BCBio import GFF
 from pprint import pformat,pprint
 from subprocess import check_output, CalledProcessError
 from collections import namedtuple
+import time
+import datetime
+import re
+import sys
 
 from AssemblyUtil.AssemblyUtilClient import AssemblyUtil
 from GenomeFileUtil.GenomeFileUtilClient import GenomeFileUtil
@@ -383,17 +387,157 @@ class kb_prokka:
         """
         fasta_for_prokka_filepath = os.path.join(self.scratch,
                                                  "features_" + str(uuid.uuid4()) + ".fasta")
+        count = 0
         with open(fasta_for_prokka_filepath, "w") as f:
             for item in genome_data["data"]["features"]:
                 if "id" not in item or "dna_sequence" not in item:
                     print("This feature does not have a valid dna sequence.")
                 else:
                     f.write(">" + item["id"] + "\n" + item["dna_sequence"] + "\n")
+                    count+=1
+                    if count==5:
+                        break
         print("Finished printing to" + fasta_for_prokka_filepath)
         if os.stat(fasta_for_prokka_filepath).st_size==0:
             raise Exception("Empty fasta")
 
         return fasta_for_prokka_filepath
+
+    def make_sso_ontology_event(self):
+        """
+
+        :param sso_ref: Reference to the annotation library set
+        :return: Ontology_event to be appended to the list of genome ontology events
+        """
+        time_string = str(datetime.datetime.fromtimestamp(time.time()).strftime('%Y_%m_%d_%H_%M_%S'))
+        yml_text = open('/kb/module/kbase.yml').read()
+        version = re.search("module-version:\n\W+(.+)\n", yml_text).group(1)
+
+        return {
+            "method": "Prokka Annotation",
+            "method_version": version,
+            "timestamp": time_string,
+            "id": "SSO",
+            "ontology_ref": self.sso_ref
+        }
+
+
+    def create_genome_ontology_fields(self,genome_data):
+        # Make sure ontologies_present exists
+        # if 'ontologies_present' not in genome_data["data"]:
+        #     genome_data['data']['ontologies_present'] = {"SSO": {}}
+        # if 'SSO' not in genome_data['data']['ontologies_present']:
+        #     genome_data['data']['ontologies_present']['SSO'] = {}
+
+        # Make sure ontologies_events exist
+        sso_event = self.make_sso_ontology_event()
+
+        if 'ontology_events' in genome_data:
+            genome_data['data']['ontology_events'].append(sso_event)
+            ontology_event_index = len(genome_data['ontology_events']) - 1
+        else:
+            genome_data['data']['ontology_events'] = [sso_event]
+            ontology_event_index = 0
+
+        genome_obj_modified = namedtuple('genome_obj_modified', 'genome_data ontology_event_index')
+        return genome_obj_modified(genome_data,ontology_event_index)
+
+    def set_function_and_ontologies(self, **feature_info):
+        """
+
+        :param feature_info:
+        :return:
+        """
+        feature = feature_info['feature']
+        new_function = feature_info['new_function']
+        new_ontology = feature_info['new_ontology']
+        new_functions = []
+        new_ontologies = []
+
+        if new_ontology is not None:
+            if "ontology_terms" not in feature:
+                feature["ontology_terms"] = {"SSO": {}}
+
+        feature_modified = namedtuple(
+            'feature_modified', 'feature new_functions new_ontologies')
+        return feature_modified(feature, new_functions, new_ontologies)
+
+        #
+        # print("The type of ontology_terms is" + type(genome_data["data"]["features"][i]["ontology_terms"]))
+        # print("The type of ontology_term SSO is" + type(genome_data["data"]["features"][i]["ontology_terms"]['SSO']))
+        # sys.stdout.flush()
+        #
+        # for key in new_ontology.keys():
+        #     genome_data["data"]["features"][i]["ontology_terms"]["SSO"][key] = \
+        #         new_ontology[key]
+        #     print("Key Type  for " + str(key) + " = " + str(type(new_ontology[key])))
+        #     sys.stdout.flush()
+        #
+        #    new_ontologies_count += 1
+        # print("GenomeDataFeaturesOntologyTerms")
+        # print(
+        #     json.dumps(genome_data['data']['features'][i]['ontology_terms'], indent=4))
+        #
+
+    def __reannotate_old_genome(self, annotation_args):
+        genome_data = annotation_args["genome_data"]
+        new_annotations = annotation_args["new_annotations"]
+
+        for i, feature in enumerate(genome_data["data"]["features"]):
+            fid = feature["id"]
+            current_function = feature.get("function", "")
+            current_ontology = feature.get("ontology_terms", None)
+            new_function = ""
+            new_ontology = dict()
+
+            new_function = new_function,
+            new_ontology = new_ontology
+            #genome_data["data"]["features"][i] = new_feature.feature
+
+    def __reannotate_new_genome(self, annotation_args):
+        genome_obj_modified = self.create_genome_ontology_fields(annotation_args["genome_data"])
+        genome_data = genome_obj_modified.genome_data
+        ontology_event_index = genome_obj_modified.ontology_event_index
+        new_annotations = annotation_args["new_annotations"]
+
+        for i, feature in enumerate(genome_data["data"]["features"]):
+            fid = feature["id"]
+            current_function = feature.get("function", "")
+            current_ontology = feature.get("ontology_terms", None)
+            new_function = ""
+            new_ontology = dict()
+
+
+
+
+    @staticmethod
+    def old_genome_ontologies(feature,new_ontology):
+        if "ontology_terms" not in feature:
+            feature['ontology_terms'] = {"SSO": {}}
+        if "SSO" not in feature['ontology_terms']:
+            feature['ontology_terms']['SSO'] = {}
+        for key in new_ontology.keys():
+            feature['ontology_terms']['SSO'][key] = new_ontology[key]
+        return feature
+
+    @staticmethod
+    def new_genome_ontologies(feature,new_ontology,ontology_event_index):
+        if "ontology_terms" not in feature:
+            feature['ontology_terms'] = {"SSO": {}}
+        if "SSO" not in feature['ontology_terms']:
+            feature['ontology_terms']['SSO'] = {}
+
+        for key in new_ontology.keys():
+            id = new_ontology[key]['id']
+            if id in feature['ontology_terms']['SSO']:
+                feature['ontology_terms']['SSO'][id].append(ontology_event_index)
+            else:
+                feature['ontology_terms']['SSO'][id] = [ontology_event_index]
+        return feature
+
+
+
+
 
     def annotate_genome_with_new_annotations(self, **annotation_args):
         """
@@ -402,23 +546,25 @@ class kb_prokka:
         :type
         :return:
         """
-        genome_data = annotation_args["genome_data"]
+        genome_obj_modified = self.create_genome_ontology_fields(annotation_args["genome_data"])
+        genome_data = genome_obj_modified.genome_data
+        ontology_event_index = genome_obj_modified.ontology_event_index
         new_annotations = annotation_args["new_annotations"]
-        output_genome_name = annotation_args["output_genome_name"]
 
         stats = {"current_functions": len(genome_data["data"]["features"]), "new_functions": 0,
                  "new_ontologies": 0}
 
         function_report_filepath = os.path.join(self.scratch, "ontology_report")
         ontology_report_filepath = os.path.join(self.scratch, "function_report")
-
         onto_r = open(function_report_filepath, "w")
         func_r = open(ontology_report_filepath, "w")
-
         func_r.write("function_id current_function new_function\n")
         onto_r.write("function_id current_ontology new_ontology\n")
 
-        import sys
+        new_genome = False
+        if 'feature_counts' in genome_data['data']:
+            new_genome = True
+
         for i, feature in enumerate(genome_data["data"]["features"]):
             fid = feature["id"]
             current_function = feature.get("function", "")
@@ -427,23 +573,21 @@ class kb_prokka:
             new_ontology = dict()
 
             if fid in new_annotations:
+                #Set Function
                 new_function = new_annotations[fid].get("function", "")
-                new_ontology = new_annotations[fid].get("ontology_terms", None)
-
                 if new_function and "hypothetical protein" not in new_function:
                     genome_data["data"]["features"][i]["function"] = new_function
-                    stats["new_functions"] += 1
+                    genome_data["data"]["features"][i]["functions"] = [new_function]
 
-                if new_ontology is not None:
-                    if "ontology_terms" not in genome_data["data"]["features"][i]:
-                        genome_data["data"]["features"][i]["ontology_terms"] = {"SSO": {}}
-
-                    for key in new_ontology.keys():
-                        genome_data["data"]["features"][i]["ontology_terms"]["SSO"][key] = \
-                            new_ontology[key]
-                        stats["new_ontologies"] += 1
-                        print("Key Type  for " + str(key) + " = " + str(type(new_ontology[key])))
-                        print(new_ontology[key])
+                #Set Ontologies
+                new_ontology = new_annotations[fid].get("ontology_terms", None)
+                if new_ontology:
+                    if new_genome:
+                        genome_data["data"]["features"][i] = self. \
+                            new_genome_ontologies(feature, new_ontology, ontology_event_index)
+                    else:
+                        genome_data["data"]["features"][i] = self. \
+                            old_genome_ontologies(feature, new_ontology)
 
             func_r.write(json.dumps([fid, current_function, new_function]) + "\n")
             onto_r.write(json.dumps([fid, current_ontology, new_ontology]) + "\n")
@@ -452,7 +596,7 @@ class kb_prokka:
         onto_r.close()
 
         info = self.gfu.save_one_genome({"workspace": self.output_workspace,
-                                         "name": output_genome_name,
+                                         "name": annotation_args["output_genome_name"],
                                          "data": genome_data["data"],
                                          "provenance": self.ctx.provenance()})["info"]
 
@@ -515,6 +659,7 @@ class kb_prokka:
         :param params: Reference to the genome, Output File Name, UI Parameters
         :return: Report with Reannotated Genome and Stats about it
         """
+        self.download_seed_data()
         genome_ref = self._get_input_value(params, "object_ref")
         output_name = self._get_input_value(params, "output_genome_name")
         genome_data = self.dfu.get_objects({"object_refs": [genome_ref]})["data"][0]
@@ -537,7 +682,7 @@ class kb_prokka:
         :param assembly_info: Information used to determine if the assembly is too big
         :return: Report with newly annotated assembly as a genome, and stats about it
         """
-
+        self.download_seed_data()
         assembly_ref = self._get_input_value(params, "object_ref")
         output_genome_name = self._get_input_value(params, "output_genome_name")
         output_workspace = self._get_input_value(params, "output_workspace")
@@ -617,6 +762,7 @@ class kb_prokka:
         self.dfu = DataFileUtil(self.callback_url)
 
         self.sso_ref = None
+        self.sso_event = None
         self.ctx = None
         self.ec_to_sso = {}
         self.output_workspace = None
@@ -675,7 +821,8 @@ class kb_prokka:
         object_info = self.ws_client.get_object_info_new({"objects": [{"ref": object_ref}],
                                                            "includeMetadata": 1})[0]
         object_type = object_info[2]
-        self.download_seed_data()
+
+
 
         if "KBaseGenomeAnnotations.Assembly" in object_type:
             return [self.annotate_assembly(params, object_info)]
