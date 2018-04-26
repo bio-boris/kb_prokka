@@ -1,31 +1,20 @@
 # -*- coding: utf-8 -*-
-import unittest
 import os  # noqa: F401
-import json  # noqa: F401
 import time
-import requests
-import shutil
-
+import unittest
 from os import environ
+
 try:
     from ConfigParser import ConfigParser  # py2
 except:
     from configparser import ConfigParser  # py3
 
-from pprint import pprint  # noqa: F401
-
 from biokbase.workspace.client import Workspace as workspaceService
 from kb_prokka.kb_prokkaImpl import kb_prokka
 from kb_prokka.kb_prokkaServer import MethodContext
-from AssemblyUtil.AssemblyUtilClient import AssemblyUtil
 from kb_prokka.authclient import KBaseAuth as _KBaseAuth
-from AssemblySequenceAPI.AssemblySequenceAPIClient import AssemblySequenceAPI
 from GenomeFileUtil.GenomeFileUtilClient import GenomeFileUtil
 from DataFileUtil.DataFileUtilClient import DataFileUtil
-
-from kb_prokka.genome_object_client import add_features
-
-
 
 
 class ProkkaAnnotationTest(unittest.TestCase):
@@ -98,7 +87,8 @@ class ProkkaAnnotationTest(unittest.TestCase):
 
         new_genome = "30045/14/1"
         genome_name = 'OldRhodo'
-        genome_data = self.dfu.get_objects({"object_refs": [new_genome]})["data"][0]
+        genome_data_old = self.dfu.get_objects({"object_refs": [old_genome]})["data"][0]
+        genome_data_new = self.dfu.get_objects({"object_refs": [new_genome]})["data"][0]
 
         sso_1 = {"id" : "1",
                  "evidence": [],
@@ -114,15 +104,26 @@ class ProkkaAnnotationTest(unittest.TestCase):
 
         sso_terms = { 'SSO1' : sso_1  , 'SSO2' : sso_2 }
 
-        for i,item in enumerate(genome_data['data']['features']):
-           genome_data['data']['features'][i]['ontology_terms'] = {"SSO": sso_terms}
+        print("ABOUT TO MODIFY OLD GENOME")
+        for i,item in enumerate(genome_data_old['data']['features']):
+            genome_data_old['data']['features'][i]['ontology_terms'] = {"SSO": sso_terms}
 
+        print("ABOUT TO MODIFY NEW GENOME")
+        for i, item in enumerate(genome_data_new['data']['features']):
+           genome_data_new['data']['features'][i]['ontology_terms'] = {"SSO": sso_terms}
 
-
+        print("ABOUT TO SAVE OLD GENOME")
         info = self.gfu.save_one_genome({"workspace": self.getWsName(),
                                          "name": genome_name,
-                                         "data": genome_data["data"],
+                                         "data": genome_data_old["data"],
                                          "provenance": self.ctx.provenance()})["info"]
+
+        print("ABOUT TO SAVE NEW GENOME")
+        info = self.gfu.save_one_genome({"workspace": self.getWsName(),
+                                         "name": genome_name,
+                                         "data": genome_data_new["data"],
+                                         "provenance": self.ctx.provenance()})["info"]
+
 
 
 
