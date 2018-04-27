@@ -11,10 +11,10 @@ from Workspace.WorkspaceClient import Workspace as workspaceService
 class kb_prokka:
     '''
     Module Name:
-    ProkkaAnnotation
+    kb_prokka
 
     Module Description:
-    A KBase module: ProkkaAnnotation
+    A KBase module: kb_prokka
     '''
 
     ######## WARNING FOR GEVENT USERS ####### noqa
@@ -23,9 +23,9 @@ class kb_prokka:
     # state. A method could easily clobber the state set by another while
     # the latter method is running.
     ######################################### noqa
-    VERSION = "0.1.0"
-    GIT_URL = "https://github.com/bio-boris/ProkkaAnnotation.git"
-    GIT_COMMIT_HASH = "8d1d5cadab1f7a7c34ad5653a745f02316669296"
+    VERSION = "0.0.1"
+    GIT_URL = "https://github.com/bio-boris/kb_prokka.git"
+    GIT_COMMIT_HASH = "a06ff006d664e431bd27f4461699b6199e898af9"
 
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -51,14 +51,14 @@ class kb_prokka:
            command line arguments): --scientific_name Genome scientific name
            (default 'Unknown') --kingdom [X]     Annotation mode:
            Archaea|Bacteria|Mitochondria|Viruses (default 'Bacteria') --genus
-           [X]       Genus name (triggers to use --usegenus) --gcode [N]
+           [X]       Genus name (triggers to use --usegenus) --gcode [N]     
            Genetic code / Translation table (set if --kingdom is set)
            (default '11') --metagenome      Improve gene predictions for
            highly fragmented genomes (default OFF) --rawproduct      Do not
            clean up /product annotation (default OFF) --fast            Fast
            mode - skip CDS /product searching (default OFF) --mincontiglen
            [N] Minimum contig size [NCBI needs 200] (default '1') --evalue
-           [n.n]    Similarity e-value cut-off (default '1e-06') --rfam
+           [n.n]    Similarity e-value cut-off (default '1e-06') --rfam      
            Enable searching for ncRNAs with Infernal+Rfam (SLOW!) (default
            OFF) --norrna          Don't run rRNA search (default OFF)
            --notrna          Don't run tRNA search (default OFF)) ->
