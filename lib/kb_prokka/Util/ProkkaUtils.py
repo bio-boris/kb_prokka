@@ -426,16 +426,17 @@ class ProkkaUtils:
 
         # Make sure ontologies_events exist
         sso_event = self.make_sso_ontology_event()
+        ontology_event_index = 0
 
         if 'ontology_events' in genome_data['data']:
             genome_data['data']['ontology_events'].append(sso_event)
-            ontology_event_index = len(genome_data['data']['ontology_events']) - 1
+            ontology_event_index += len(genome_data['data']['ontology_events']) - 1
         else:
             genome_data['data']['ontology_events'] = [sso_event]
-            ontology_event_index = 0
 
+        print("ABOUT TO RETURN ONTOLOGY EVEN TINDEX OF:" + str(ontology_event_index  ))
         genome_obj_modified = namedtuple('genome_obj_modified', 'genome_data ontology_event_index')
-        return genome_obj_modified(genome_data, ontology_event_index)
+        return genome_obj_modified(genome_data, str(ontology_event_index))
 
     def set_function_and_ontologies(self, **feature_info):
         """
