@@ -427,7 +427,7 @@ class ProkkaUtils:
         # Make sure ontologies_events exist
         sso_event = self.make_sso_ontology_event()
 
-        if 'ontology_events' in genome_data:
+        if 'ontology_events' in genome_data['data']:
             genome_data['data']['ontology_events'].append(sso_event)
             ontology_event_index = len(genome_data['data']['ontology_events']) - 1
         else:
