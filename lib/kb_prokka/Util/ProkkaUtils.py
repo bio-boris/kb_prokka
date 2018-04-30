@@ -657,7 +657,7 @@ class ProkkaUtils:
         output_name = self._get_input_value(params, "output_genome_name")
         #genome_data = self.dfu.get_objects({"object_refs": [genome_ref]})["data"][0]
 
-        genome_data = self.genome_api.get_genome_v1({"genomes": [{"ref": genome_ref}]})["genomes"][0]
+        genome_data = self.genome_api.get_genome_v1({"genomes": [{"ref": genome_ref}], 'downgrade': 0})["genomes"][0]
 
         fasta_for_prokka_filepath = self.write_genome_to_fasta(genome_data)
         output_dir = self.run_prokka(params, fasta_for_prokka_filepath)
