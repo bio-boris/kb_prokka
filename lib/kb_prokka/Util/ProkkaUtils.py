@@ -16,6 +16,7 @@ from Bio.SeqRecord import SeqRecord
 from AssemblyUtil.AssemblyUtilClient import AssemblyUtil
 from DataFileUtil.DataFileUtilClient import DataFileUtil
 from GenomeFileUtil.GenomeFileUtilClient import GenomeFileUtil
+from GenomeAnnotationAPI.GenomeAnnotationAPIClient import GenomeAnnotationAPI
 from KBaseReport.KBaseReportClient import KBaseReport
 from Workspace.WorkspaceClient import Workspace as workspaceService
 
@@ -32,6 +33,7 @@ class ProkkaUtils:
         self.au = AssemblyUtil(self.callback_url)
         self.kbr = KBaseReport(self.callback_url)
         self.dfu = DataFileUtil(self.callback_url)
+        self.genome_api = GenomeAnnotationAPI(self.callback_url)
 
         self.sso_ref = None
         self.sso_event = None
@@ -391,7 +393,7 @@ class ProkkaUtils:
                         break
         print("Finished printing to" + fasta_for_prokka_filepath)
         if os.stat(fasta_for_prokka_filepath).st_size == 0:
-            raise Exception("Empty fasta")
+            raise Exception("This genome does not contain features with DNA_SEQUENCES. Fasta file is empty.")
 
         return fasta_for_prokka_filepath
 
@@ -537,7 +539,7 @@ class ProkkaUtils:
         new_annotations = annotation_args["new_annotations"]
 
         stats = {"current_functions": len(genome_data["data"]["features"]), "new_functions": 0,
-                 "new_ontologies": 0}
+                 "found_functions" :0, "new_ontologies": 0}
 
         function_report_filepath = os.path.join(self.scratch, "ontology_report")
         ontology_report_filepath = os.path.join(self.scratch, "function_report")
@@ -563,10 +565,14 @@ class ProkkaUtils:
                 if new_function and "hypothetical protein" not in new_function:
                     genome_data["data"]["features"][i]["function"] = new_function
                     genome_data["data"]["features"][i]["functions"] = [new_function]
+                    if(new_function!= current_function):
+                        stats['new_functions'] += 1
+                    stats['found_functions'] += 1
 
                 # Set Ontologies
                 new_ontology = new_annotations[fid].get("ontology_terms", None)
                 if new_ontology:
+                    stats['new_ontologies'] += 1
                     if new_genome:
                         genome_data["data"]["features"][i] = self. \
                             new_genome_ontologies(feature, new_ontology, ontology_event_index)
@@ -649,7 +655,10 @@ class ProkkaUtils:
 
         genome_ref = self._get_input_value(params, "object_ref")
         output_name = self._get_input_value(params, "output_genome_name")
-        genome_data = self.dfu.get_objects({"object_refs": [genome_ref]})["data"][0]
+        #genome_data = self.dfu.get_objects({"object_refs": [genome_ref]})["data"][0]
+
+        genome_data = self.genome_api.get_genome_v1({"genomes": [{"ref": genome_ref}]})["genomes"][0]
+
         fasta_for_prokka_filepath = self.write_genome_to_fasta(genome_data)
         output_dir = self.run_prokka(params, fasta_for_prokka_filepath)
         prokka_results = self.retrieve_prokka_results(output_dir)

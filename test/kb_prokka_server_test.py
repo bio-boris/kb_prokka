@@ -2,6 +2,7 @@
 import os  # noqa: F401
 import time
 import unittest
+import json
 from os import environ
 
 try:
@@ -9,7 +10,7 @@ try:
 except:
     from configparser import ConfigParser  # py3
 
-from biokbase.workspace.client import Workspace as workspaceService
+from Workspace.WorkspaceClient import Workspace as workspaceService
 from kb_prokka.kb_prokkaImpl import kb_prokka
 from kb_prokka.kb_prokkaServer import MethodContext
 from kb_prokka.authclient import KBaseAuth as _KBaseAuth
@@ -127,8 +128,38 @@ class ProkkaAnnotationTest(unittest.TestCase):
 
 
 
+    def test_reannotate_RICKETS(self):
+        genome_ref = '31932/5/1'
+        genome_name = 'Rickettsia_rickettsii_str._R'
+        self.callback_url = os.environ["SDK_CALLBACK_URL"]
+        self.dfu = DataFileUtil(self.callback_url)
 
-    def test_reannotate_new_genome(self):
+        result = self.getImpl().annotate(self.getContext(),
+                                         {"object_ref": genome_ref,
+                                          "output_workspace": self.getWsName(),
+                                          "output_genome_name": genome_name,
+                                          "evalue": None,
+                                          "fast": 0,
+                                          "gcode": 0,
+                                          "genus": "genus",
+                                          "kingdom": "Bacteria",
+                                          "metagenome": 0,
+                                          "mincontiglen": 1,
+                                          "norrna": 0,
+                                          "notrna": 0,
+                                          "rawproduct": 0,
+                                          "rfam": 1,
+                                          "scientific_name": "RhodoBacter"
+                                          })[0]
+
+        genome_data = self.dfu.get_objects({"object_refs": [result['output_genome_ref']]})["data"][0]['data']
+        scratch = "/kb/module/work/tmp/";
+
+        with open(scratch + 'OUTPUT_GENOME.txt', 'w+') as outfile:
+            json.dump(genome_data, outfile)
+
+
+    def Xtest_reannotate_new_genome(self):
         genome_ref = '30045/14/1'
         genome_name = 'NewRhodo'
 
