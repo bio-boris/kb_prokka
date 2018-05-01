@@ -432,21 +432,12 @@ class ProkkaUtils:
         version = re.search("module-version:\n\W+(.+)\n", yml_text).group(1)
 
         return {
-            "method": "Prokka Annotation",
+            "method": "Prokka Annotation (Evidence)",
             "method_version": version,
             "timestamp": time_string,
         }
 
-
-
-
     def create_genome_ontology_fields(self, genome_data):
-        # Make sure ontologies_present exists
-        # if 'ontologies_present' not in genome_data["data"]:
-        #     genome_data['data']['ontologies_present'] = {"SSO": {}}
-        # if 'SSO' not in genome_data['data']['ontologies_present']:
-        #     genome_data['data']['ontologies_present']['SSO'] = {}
-
         # Make sure ontologies_events exist
         sso_event = self.make_sso_ontology_event()
         ontology_event_index = 0
@@ -460,94 +451,29 @@ class ProkkaUtils:
         genome_obj_modified = namedtuple('genome_obj_modified', 'genome_data ontology_event_index')
         return genome_obj_modified(genome_data, ontology_event_index)
 
-    def set_function_and_ontologies(self, **feature_info):
-        """
-
-        :param feature_info:
-        :return:
-        """
-        feature = feature_info['feature']
-        new_function = feature_info['new_function']
-        new_ontology = feature_info['new_ontology']
-        new_functions = []
-        new_ontologies = []
-
-        if new_ontology is not None:
-            if "ontology_terms" not in feature:
-                feature["ontology_terms"] = {"SSO": {}}
-
-        feature_modified = namedtuple(
-            'feature_modified', 'feature new_functions new_ontologies')
-        return feature_modified(feature, new_functions, new_ontologies)
-
-        #
-        # print("The type of ontology_terms is" + type(genome_data["data"]["features"][i]["ontology_terms"]))
-        # print("The type of ontology_term SSO is" + type(genome_data["data"]["features"][i]["ontology_terms"]['SSO']))
-        # sys.stdout.flush()
-        #
-        # for key in new_ontology.keys():
-        #     genome_data["data"]["features"][i]["ontology_terms"]["SSO"][key] = \
-        #         new_ontology[key]
-        #     print("Key Type  for " + str(key) + " = " + str(type(new_ontology[key])))
-        #     sys.stdout.flush()
-        #
-        #    new_ontologies_count += 1
-        # print("GenomeDataFeaturesOntologyTerms")
-        # print(
-        #     json.dumps(genome_data['data']['features'][i]['ontology_terms'], indent=4))
-        #
-
-    def __reannotate_old_genome(self, annotation_args):
-        genome_data = annotation_args["genome_data"]
-        new_annotations = annotation_args["new_annotations"]
-
-        for i, feature in enumerate(genome_data["data"]["features"]):
-            fid = feature["id"]
-            current_function = feature.get("function", "")
-            current_ontology = feature.get("ontology_terms", None)
-            new_function = ""
-            new_ontology = dict()
-
-            new_function = new_function,
-            new_ontology = new_ontology
-            # genome_data["data"]["features"][i] = new_feature.feature
-
-    def __reannotate_new_genome(self, annotation_args):
-        genome_obj_modified = self.create_genome_ontology_fields(annotation_args["genome_data"])
-        genome_data = genome_obj_modified.genome_data
-        ontology_event_index = genome_obj_modified.ontology_event_index
-        new_annotations = annotation_args["new_annotations"]
-
-        for i, feature in enumerate(genome_data["data"]["features"]):
-            fid = feature["id"]
-            current_function = feature.get("function", "")
-            current_ontology = feature.get("ontology_terms", None)
-            new_function = ""
-            new_ontology = dict()
-
     @staticmethod
     def old_genome_ontologies(feature, new_ontology):
         if "ontology_terms" not in feature:
-            feature['ontology_terms'] = {"SSO": {}}
-        if "SSO" not in feature['ontology_terms']:
-            feature['ontology_terms']['SSO'] = {}
+            feature["ontology_terms"] = {"SSO": {}}
+        if "SSO" not in feature["ontology_terms"]:
+            feature["ontology_terms"]["SSO"] = {}
         for key in new_ontology.keys():
-            feature['ontology_terms']['SSO'][key] = new_ontology[key]
+            feature["ontology_terms"]["SSO"][key] = new_ontology[key]
         return feature
 
     @staticmethod
     def new_genome_ontologies(feature, new_ontology, ontology_event_index):
         if "ontology_terms" not in feature:
-            feature['ontology_terms'] = {"SSO": {}}
-        if "SSO" not in feature['ontology_terms']:
-            feature['ontology_terms']['SSO'] = {}
+            feature["ontology_terms"] = {"SSO": {}}
+        if "SSO" not in feature["ontology_terms"]:
+            feature["ontology_terms"]["SSO"] = {}
 
         for key in new_ontology.keys():
-            id = new_ontology[key]['id']
-            if id in feature['ontology_terms']['SSO']:
-                feature['ontology_terms']['SSO'][id].append(ontology_event_index)
+            id = new_ontology[key]["id"]
+            if id in feature["ontology_terms"]["SSO"]:
+                feature["ontology_terms"]["SSO"][id].append(ontology_event_index)
             else:
-                feature['ontology_terms']['SSO'][id] = [ontology_event_index]
+                feature["ontology_terms"]["SSO"][id] = [ontology_event_index]
         return feature
 
     def annotate_genome_with_new_annotations(self, **annotation_args):
@@ -557,10 +483,15 @@ class ProkkaUtils:
         :type
         :return:
         """
-        genome_obj_modified = self.create_genome_ontology_fields(annotation_args["genome_data"])
-        genome_data = genome_obj_modified.genome_data
-        ontology_event_index = genome_obj_modified.ontology_event_index
+        genome_data = annotation_args["genome_data"]
         new_annotations = annotation_args["new_annotations"]
+
+        new_genome = False
+        if 'feature_counts' in genome_data['data']:
+            new_genome = True
+            genome_obj_modified = self.create_genome_ontology_fields(genome_data)
+            genome_data = genome_obj_modified.genome_data
+            ontology_event_index = genome_obj_modified.ontology_event_index
 
         stats = {"current_functions": len(genome_data["data"]["features"]), "new_functions": 0,
                  "found_functions": 0, "new_ontologies": 0}
@@ -571,10 +502,6 @@ class ProkkaUtils:
         func_r = open(ontology_report_filepath, "w")
         func_r.write("function_id current_function new_function\n")
         onto_r.write("function_id current_ontology new_ontology\n")
-
-        new_genome = False
-        if 'feature_counts' in genome_data['data']:
-            new_genome = True
 
         for i, feature in enumerate(genome_data["data"]["features"]):
             fid = feature["id"]
@@ -618,10 +545,10 @@ class ProkkaUtils:
         genome_ref = str(info[6]) + "/" + str(info[0]) + "/" + str(info[4])
 
         annotated_genome = namedtuple("annotated_genome",
-                                      "genome_ref function_report_filepath ontology_report_filepath stats ontology_events")
+                                      "genome_ref function_report_filepath ontology_report_filepath stats")
 
         return annotated_genome(genome_ref, function_report_filepath, ontology_report_filepath,
-                                stats, genome_data['data']['ontology_events'])
+                                stats)
 
     def upload_file(self, filepath, message="Annotation report generated by kb_prokka"):
         """
@@ -653,11 +580,8 @@ class ProkkaUtils:
                           "Number of functions:{1}\n"
                           "New Functions found:{2}\n"
                           "Ontology terms found:{3}\n"
-                          "Ontology events:{4}\n").format(genome_ref,
-                                                          stats["current_functions"],
-                                                          stats["new_functions"],
-                                                          stats["new_ontologies"],
-                                                          json.dumps(genome.ontology_events))
+                          ).format(genome_ref, stats["current_functions"], stats["new_functions"],
+                                   stats["new_ontologies"])
 
         report_info = self.kbr.create_extended_report(
             {"message": report_message,
@@ -684,8 +608,8 @@ class ProkkaUtils:
         # genome_data = self.dfu.get_objects({"object_refs": [genome_ref]})["data"][0]
 
         genome_data = \
-        self.genome_api.get_genome_v1({"genomes": [{"ref": genome_ref}], 'downgrade': 0})[
-            "genomes"][0]
+            self.genome_api.get_genome_v1({"genomes": [{"ref": genome_ref}], 'downgrade': 0})[
+                "genomes"][0]
 
         fasta_for_prokka_filepath = self.write_genome_to_fasta(genome_data)
         output_dir = self.run_prokka(params, fasta_for_prokka_filepath)
