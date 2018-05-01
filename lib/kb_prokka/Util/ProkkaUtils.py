@@ -532,9 +532,9 @@ class ProkkaUtils:
                         genome_data["data"]["features"][i] = self. \
                             old_genome_ontologies(feature, new_ontology)
             if current_function:
-                func_r.write(json.dumps([fid, current_function, new_function]) + "\n")
+                func_r.write(json.dumps([fid, [current_function], [new_function]]) + "\n")
             else:
-                func_r.write(json.dumps([fid, current_functions, new_function]) + "\n")
+                func_r.write(json.dumps([fid, current_functions, [new_function]]) + "\n")
 
             onto_r.write(json.dumps([fid, current_ontology, new_ontology]) + "\n")
 
