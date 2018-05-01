@@ -434,9 +434,9 @@ class ProkkaUtils:
         else:
             genome_data['data']['ontology_events'] = [sso_event]
 
-        print("ABOUT TO RETURN ONTOLOGY EVEN TINDEX OF:" + str(ontology_event_index  ))
+        print("ABOUT TO RETURN ONTOLOGY EVEN TINDEX OF" + str(ontology_event_index))
         genome_obj_modified = namedtuple('genome_obj_modified', 'genome_data ontology_event_index')
-        return genome_obj_modified(genome_data, str(ontology_event_index))
+        return genome_obj_modified(genome_data, ontology_event_index)
 
     def set_function_and_ontologies(self, **feature_info):
         """
