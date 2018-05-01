@@ -506,6 +506,7 @@ class ProkkaUtils:
         for i, feature in enumerate(genome_data["data"]["features"]):
             fid = feature["id"]
             current_function = feature.get("function", "")
+            current_functions = feature.get("functions", [])
             current_ontology = feature.get("ontology_terms", None)
             new_function = ""
             new_ontology = dict()
@@ -514,10 +515,10 @@ class ProkkaUtils:
                 # Set Function
                 new_function = new_annotations[fid].get("function", "")
                 if new_function and "hypothetical protein" not in new_function:
+                    if (new_function != current_function and new_function not in current_functions):
+                        stats['new_functions'] += 1
                     genome_data["data"]["features"][i]["function"] = new_function
                     genome_data["data"]["features"][i]["functions"] = [new_function]
-                    if (new_function != current_function):
-                        stats['new_functions'] += 1
                     stats['found_functions'] += 1
 
                 # Set Ontologies
@@ -577,7 +578,7 @@ class ProkkaUtils:
                       self.upload_file(genome.function_report_filepath)]
 
         report_message = ("Genome Ref:{0}\n"
-                          "Number of functions:{1}\n"
+                          "Number of features:{1}\n"
                           "New Functions found:{2}\n"
                           "Ontology terms found:{3}\n"
                           ).format(genome_ref, stats["current_functions"], stats["new_functions"],
