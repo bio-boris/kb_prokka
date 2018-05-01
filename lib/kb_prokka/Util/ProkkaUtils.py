@@ -531,8 +531,11 @@ class ProkkaUtils:
                     else:
                         genome_data["data"]["features"][i] = self. \
                             old_genome_ontologies(feature, new_ontology)
+            if current_function:
+                func_r.write(json.dumps([fid, current_function, new_function]) + "\n")
+            else:
+                func_r.write(json.dumps([fid, current_functions, new_function]) + "\n")
 
-            func_r.write(json.dumps([fid, current_function, new_function]) + "\n")
             onto_r.write(json.dumps([fid, current_ontology, new_ontology]) + "\n")
 
         func_r.close()
@@ -578,8 +581,8 @@ class ProkkaUtils:
                       self.upload_file(genome.function_report_filepath)]
 
         report_message = ("Genome Ref:{0}\n"
-                          "Number of features:{1}\n"
-                          "New Functions found:{2}\n"
+                          "Number of features sent into prokka:{1}\n"
+                          "New functions found:{2}\n"
                           "Ontology terms found:{3}\n"
                           ).format(genome_ref, stats["current_functions"], stats["new_functions"],
                                    stats["new_ontologies"])
@@ -685,6 +688,7 @@ class ProkkaUtils:
 
         report_message = "Genome saved to: " + output_workspace + "/" + \
                          output_genome_name + "\n" + annotated_assembly.report_message
+
         report_info = self.kbr.create_extended_report(
             {"message": report_message,
              "objects_created": [{"ref": genome_ref, "description": "Annotated genome"}],
