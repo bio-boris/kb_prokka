@@ -242,6 +242,8 @@ class ProkkaUtils:
         cds_to_prot = prokka_parse_parameters["cds_to_prot"]
         new_ids_to_old = prokka_parse_parameters["new_ids_to_old"]
 
+        evidence = self.make_annotation_evidence()
+
         cdss = []
         mrnas = []
         features = []
@@ -296,7 +298,7 @@ class ProkkaUtils:
                         sso_terms = {}
                         for sso_item in sso_list:
                             sso_terms[sso_item["id"]] = {"id": sso_item["id"],
-                                                         "evidence": [],
+                                                         "evidence": [evidence],
                                                          "term_name": sso_item["name"],
                                                          "ontology_ref": self.sso_ref,
                                                          "term_lineage": []}
@@ -345,6 +347,7 @@ class ProkkaUtils:
         :param gff_filepath: A dictionary of ids with products and ec numbers
         :return:
         """
+        evidence = self.make_annotation_evidence()
         genome = {}
         with open(gff_filepath, "r") as f:
             for rec in GFF.parse(f):
@@ -363,7 +366,7 @@ class ProkkaUtils:
                             sso_list = self.ec_to_sso.get(ec, [])
                             for sso_item in sso_list:
                                 sso_terms[sso_item["id"]] = {"id": sso_item["id"],
-                                                             "evidence": [],
+                                                             "evidence": [evidence],
                                                              "term_name": sso_item["name"],
                                                              "ontology_ref": self.sso_ref,
                                                              "term_lineage": []}
@@ -417,6 +420,26 @@ class ProkkaUtils:
             "ontology_ref": self.sso_ref
         }
 
+    def make_annotation_evidence(self):
+        """
+
+        :param sso_ref: Reference to the annotation library set
+        :return: Ontology_event to be appended to the list of genome ontology events
+        """
+        time_string = str(
+            datetime.datetime.fromtimestamp(time.time()).strftime('%Y_%m_%d_%H_%M_%S'))
+        yml_text = open('/kb/module/kbase.yml').read()
+        version = re.search("module-version:\n\W+(.+)\n", yml_text).group(1)
+
+        return {
+            "method": "Prokka Annotation",
+            "method_version": version,
+            "timestamp": time_string,
+        }
+
+
+
+
     def create_genome_ontology_fields(self, genome_data):
         # Make sure ontologies_present exists
         # if 'ontologies_present' not in genome_data["data"]:
@@ -434,7 +457,6 @@ class ProkkaUtils:
         else:
             genome_data['data']['ontology_events'] = [sso_event]
 
-        print("ABOUT TO RETURN ONTOLOGY EVEN TINDEX OF" + str(ontology_event_index))
         genome_obj_modified = namedtuple('genome_obj_modified', 'genome_data ontology_event_index')
         return genome_obj_modified(genome_data, ontology_event_index)
 
