@@ -130,7 +130,9 @@ class ProkkaAnnotationTest(unittest.TestCase):
 
     def test_reannotate_RICKETS(self):
         genome_ref = '31932/5/1'
-        genome_name = 'Rickettsia_rickettsii_str._R'
+        genome_ref = '32038/3/2'
+        genome_ref = '32132/5/1'
+        genome_name = 'Aceti'
         self.callback_url = os.environ["SDK_CALLBACK_URL"]
         self.dfu = DataFileUtil(self.callback_url)
 
