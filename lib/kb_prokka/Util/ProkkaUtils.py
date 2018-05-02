@@ -392,8 +392,7 @@ class ProkkaUtils:
                 else:
                     f.write(">" + item["id"] + "\n" + item["dna_sequence"] + "\n")
                     count += 1
-                    if count == 100:
-                        break
+
         print("Finished printing to" + fasta_for_prokka_filepath)
         if os.stat(fasta_for_prokka_filepath).st_size == 0:
             raise Exception(
